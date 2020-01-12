@@ -1,7 +1,6 @@
 ---
 title: "practice"
 author: "Harsh Kakadiya"
-date: "17/12/2019"
 output: html_document
 ---
 
