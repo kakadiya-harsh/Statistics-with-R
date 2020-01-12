@@ -4,6 +4,6 @@ This course introduces you to sampling and exploring data, as well as basic prob
 
 * Week 1 - About Introduction to Probability and Data
 * Week 2 - Exploratory Data Analysis and Introduction to Inference
-* * Week 3 - Introduction to Probability
+* Week 3 - Introduction to Probability
 * Week 4 - Probability Distributions
 * Week 5 - Data Analysis Project
