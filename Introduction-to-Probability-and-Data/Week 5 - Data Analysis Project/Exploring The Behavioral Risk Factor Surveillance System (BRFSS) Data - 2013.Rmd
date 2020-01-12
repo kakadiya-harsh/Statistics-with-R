@@ -1,0 +1,396 @@
+---
+title: "Project: Exploring The Behavioral Risk Factor Surveillance System (BRFSS) - 2013 Data"
+author: "by Harsh Kakadiya"
+output:
+  statsr:::statswithr_lab:
+    toc: true
+    toc_depth: 3
+    toc_float:
+      collapsed:  true
+      smooth_scroll: true
+---
+***
+## Setup
+
+### Load packages
+
+In this lab, we will explore the data using the `dplyr` package, and we will use the `ggplot2` package for data visualization.
+
+Let's load the packages.
+
+```{r load-packages, message=FALSE, warning=FALSE}
+library(ggplot2)
+library(dplyr)
+```
+
+### Load data
+
+```{r load-data}
+load("brfss2013.gz")
+```
+
+
+* * *
+
+## Part 1: Data Collection, Generabizability & CaUSlity
+
+The data was collected by the Center for Disease Control and Prevention (CDC) during 2013-2014. The data was collected via a telephone survey, where participants were chosen randomly from an adult resident of the 50 states in the US. More than 450k surveys were collected. The interviewer will collect data from a randomly selected adult, so this method was effective at obtaining a random model that could describe the population at large. Therefore, we can assume from the observational characteristics of the study and the fact that participants were randomly examined that the study's results are generalizable to the entire US population. Here, BRFSS is an observational study, not an experiment. We are not using any random assignment. So, it can only establish a correlation/association between variables, and causation can not be determined.
+
+
+[BRFSS 2013 Codebook](http://www.cdc.gov/brfss/annual_data/2013/pdf/codebook13_llcp.pdf)
+
+
+
+* * *
+
+
+## Part 2: Research questions
+
+**Research quesion 1:**  
+
+*Do male US citizens are more healthier than their female counterparts?*  
+
+I want to compare the health status of the US citizens by their gender. I am using the *genhlth* categorical variable having the value ranging from "Excellent" to "Poor" which indicates the general health status of the participant.
+Results will help to understand health problems among different gender, and it might also help in future health awareness initiatives while targeting the audience by gender.
+
+
+
+**Research quesion 2:** 
+
+*Do exercise helps US female and male citizens to be more mentally healthy?*
+
+The purpose of this question is to know who takes exercise more seriously among US citizens. I would like to see the spread of the Nervousness and Depression level of US citizens across different gender. I would like to know the impact of exercise in the past 30 days on the Nervousness and Depression level of US citizens.
+
+
+
+**Research quesion 3:**  
+
+*How does healthcare coverage is related to the general health status and gender of all US citizens?*
+
+I am interested to know the health care coverage planning of all US citizens across different gender, and I also want to how the likeliness of  US citizens to take healthcare coverage depends on their general status. Results will help to design proper healthcare schemes for different segments of US citizens. 
+
+ 
+
+
+* * *
+
+## Part 3: Exploratory data analysis
+
+BRFSS data set also has `NA` entries, but in this case we don't want to get rid of anything but the `NA`s so we need to target them directly. `NA` entries need special targeting because they do not actually exist (they are different to the text `"NA"` or a variable saved with the name `NA`). 
+
+If we only wanted to find the `NA`s we would use the `is.na()` function with the name of the variable inside the parentheses. 
+
+However since we want the entries that are **not** `NA`s we can use the __Not__ operator, `!`, to indicate "we want all the ones that are not NA":`!is.na()`. Hence we can `filter` out all non NAs in our `dplyr` chain
+
+
+
+### Research Quesion 1
+> Do male US citizens are more healthier than their female counterparts? 
+
+
+**Variables**
+
+    Variable Name  Description
+--  -------------  -------------
+    *genhlth*      A categorical variable with value ranging from "Excellent" to "Poor" which indicates the general health status of the participant
+    *sex*          A variable holding the sex of the participant either "Male" or "Female"  
+```{r}
+RQ1 <- select(brfss2013,genhlth,sex)%>%
+  filter(!is.na(genhlth))%>%
+  filter(!is.na(sex))
+```
+
+
+
+The count of US female Citizens is compared to that of the US male citizens by different categories of general health
+```{r}
+RQ1 %>%
+  group_by(genhlth)%>%
+  summarise(genhlth_male = sum(sex == "Male"),genhlth_female = sum(sex == "Female") )
+```
+
+
+**Visualization**
+
+
+```{r warning=FALSE}
+RQ1 <- select(brfss2013,genhlth,sex)%>%
+filter(!is.na(genhlth) & !is.na(sex))
+
+ggplot(RQ1, aes(x=genhlth, fill = sex)) + geom_histogram(stat = "count") + xlab("genhlth") + ylab("Frequency")+ labs(title = "Distribution of general health level among the different gender")
+```
+  
+Here, the count might not be a very good measure to compare between both genders becase sample size for both the gender is not same, so   the percentage of female citizens general health in the total female sample is calculated and the same is done for the male citizens, and then compared.  
+
+
+
+
+```{r}
+#Percentage distribution of male and female in each category of genhlth
+
+RQ1 %>%
+  group_by(sex)%>%
+  summarise(Excellent = (sum(genhlth == "Excellent")/n())*100, Very_good = (sum(genhlth == "Very good")/n())*100, Good = (sum(genhlth == "Good")/n())*100, Fair = (sum(genhlth == "Fair")/n())*100, Poor = (sum(genhlth == "Poor")/n())*100)
+```
+
+
+When the count was used to compare, count of the female citizens had a higher value compare to male. This might have confused us into understanding that the US female citizens have excellent health more than their male counterparts, or at the same time, the US female citizens have poor health more than their male counterparts. This makes our job very difficult to understand reality but using the percentage we got a clearer and more accurate picture.
+
+**Conclusion**  
+
+There is not much difference between male and female percentages. But still, male Excellent health percentage (17.8%) is more than female Excellent health percentage (17.2%), and also male Poor health percentage (5.34%) is less than female Poor health percentage (5.96%). Here, the percentage difference is small, but the above results point out that the general health of US male citizens is slightly better than US female citizens.
+
+
+
+### Research Quesion 2
+> Do exercise helps US female and male citizens to be more mentally healthy?
+
+**Variables**
+
+    Variable Name  Description
+--  -------------  -------------
+    *misnervs*     A categorical variable with value ranging from "ALL" to "NONE" which indicates how often during the past 30 days US citizens feel nervous 
+    *misdeprd*     A categorical variable with value ranging from "ALL" to "NONE" which indicates how often during the past 30 days US citizens feel so depressed
+    *exerany2*     A  variable with value "Yes" or "No" whether or not the participant   exercised in the past 30 days  
+    *sex*          A variable holding the sex of the participant either "Male" or "Female"  
+    
+    
+```{r}
+RQ2 <- select(brfss2013,exerany2,misdeprd,misnervs,sex)%>%
+  filter(!is.na(misnervs))%>%
+  filter(!is.na(misdeprd))%>%
+  filter(!is.na(exerany2))%>%
+  filter(!is.na(sex))
+```
+
+The count of US female Citizens that exercised in the past 30 days is compared to that of the US male citizens that also did the same.
+
+```{r}
+RQ2 %>%
+  group_by(sex)%>%
+  summarise(Citizens_that_exercises = sum(exerany2 == "Yes"))
+```
+
+
+The count might not be a very good idea to measure and compare between both genders, so   the percentage of female citizens that exercise in the total female sample is calculated and the same is done for the male citizens, and then compared. 
+
+
+```{r}
+RQ2 %>%
+  group_by(sex)%>%
+  summarise(Percentage_Of_Exercisers = (sum(exerany2 == "Yes")/n())*100)
+```
+
+
+When the count was used to compare, the female citizens had a higher value, which might have tricked us into believing that US female citizens take exercises seriously more than their male counterparts, but using the percentage we got a clearer and more accurate picture because percentage of US male citizens take exercises seriously more than their female counterparts.
+
+
+**Visualization**
+
+Now, we will look into the Nervousness and Depression level of US citizens across different gender and how exercise in the past 30 days impact the Nervousness and Depression level of US citizens with help of different visualization.
+
+
+```{r}
+RQ2%>%
+  group_by(misnervs)%>%
+  summarise(Male_Percentage = (sum(sex == "Male")/n())*100,Female_Percentage = (sum(sex == "Female")/n())*100)
+```
+
+```{r}
+plot(RQ2$misnervs, RQ2$sex, xlab = 'Nervousness Level', ylab = 'Gender', main =
+'Nervousness Level V/S Gender of the participants')
+```
+
+```{r}
+RQ2%>%
+  group_by(misnervs )%>%
+  summarise(Exercised_Yes_Percentage = (sum(exerany2 == "Yes")/n())*100,Exercised_No_Percentage = (sum(exerany2 == "No")/n())*100)
+```
+
+```{r}
+plot(RQ2$misnervs, RQ2$exerany2, xlab = 'Nervousness Level', ylab = 'Exercised in the past', main =
+'Nervousness Level V/S Exercised in the Past 30 Days')
+``` 
+
+
+
+```{r}
+RQ2%>%
+  group_by(misnervs )%>%
+  summarise(Male_Percentage = (sum(sex == "Male")/n())*100,Female_Percentage = (sum(sex == "Female")/n())*100)
+```
+
+```{r}
+plot(RQ2$misdeprd, RQ2$sex, xlab = 'Depression Level', ylab = 'Gender', main =
+'Depression Level V/S Gender of the participants')
+```
+
+```{r}
+RQ2%>%
+  group_by(misnervs )%>%
+  summarise(Exercised_Yes_Percentage = (sum(exerany2 == "Yes")/n())*100,Exercised_No_Percentage = (sum(exerany2 == "No")/n())*100)
+```
+
+```{r}
+plot(RQ2$misdeprd, RQ2$exerany2, xlab = 'Depression Level', ylab = 'Exercised in the past', main =
+'Depression Level V/S Exercised in the Past 30 Days')
+```
+
+
+
+**Conclusion**  
+When we look at the graphs of the Nervousness and Depression level of US citizens versus exercise in the past 30 days and gender, it is clear that the percentage of females in the Nervousness and Depression level "All time" is more more than their male counterparts. It also shows that if a person exercises in the past 30 days, then the chance of being mentally healthier is more. Here, the male citizens having 77.2% and female citizens having 73.8% of exercisers, points out that US male citizens exercise more than their female counterparts.
+
+
+### Research Quesion 3
+> How does healthcare coverage is related to the general health status and gender of all US citizens?
+
+
+
+**Variables**
+
+    Variable Name  Description
+--  -------------  -------------
+    *genhlth*      A categorical variable with value ranging from “Excellent” to “Poor”, which indicates the general health status of the participant
+    *hlthpln1*     A variable having value “Yes” or “No” tells about any kind of health care coverage, including health insurance, prepaid plans such as HMOs, or government plans such as Medicare, or Indian Health Service
+    *sex*          A variable holding the sex of the participant either "Male" or "Female"  
+
+
+```{r}
+#New dataframe for Research Quesion 3
+RQ3 <- select(brfss2013,genhlth,hlthpln1,sex)%>%
+filter(!is.na(genhlth) & !is.na(hlthpln1) & !is.na(sex))
+
+#Distribution of general health status of all US citizens  
+RQ3%>%
+  group_by(genhlth)%>%
+  summarise(count = n())
+```
+
+A table showing frequency distibution of general health status among the US Population
+
+
+**Visualization**
+
+```{r warning=FALSE}
+ggplot(RQ3, aes(x=genhlth)) + geom_histogram(stat = "count") +
+ xlab("General Health Status") + ylab("Frequency") + 
+labs(title = "Distribution of General Health Status among US Citizens") 
+```
+
+```{r warning=FALSE}
+#Distribution of Healthcare coverage
+RQ3%>%
+  group_by(hlthpln1)%>%
+  summarise(count = n())
+ggplot(RQ3, aes(x=hlthpln1)) + geom_histogram(stat = "count") + xlab("Healthcare coverage") + ylab("Frequency") + labs(title = "Distribution of Healthcare coverage among US Citizens")
+```
+
+```{r warning=FALSE}
+ggplot(RQ3, aes(x=genhlth, fill =hlthpln1 )) + geom_histogram(stat = "count") + xlab("General Health Status") + ylab("Frequency")+ labs(title = "Distribution of General Health Status with Healthcare coverage highlighted")
+```
+
+
+```{r}
+#Show percentage of male and female citizens that have Excellent health 
+RQ3%>%
+  group_by(sex)%>%
+  summarise(Excellent_health = (sum(genhlth=="Excellent")/n())*100)
+```
+
+Above result shows comparison of the percentage of *Excellent* health across genders.
+
+
+
+
+```{r}
+#Show percentage of male and female citizens that have Poor health 
+RQ3%>%
+  group_by(sex)%>%
+  summarise(Poor_health = (sum(genhlth=="Poor")/n())*100)
+```
+
+Above result shows comparison of the percentage of *Poor* health across genders.
+  
+
+
+
+
+
+```{r}
+#Distribution of Excellent health level with their healthcare coverage for all female citizens
+RQ3%>%
+  filter(sex=="Female")%>%
+  group_by(hlthpln1)%>%
+  summarise(Excellent_health_f = ((sum(genhlth == "Excellent"))/n())*100)
+```
+
+Above result shows distribution of Excellent health level with their healthcare coverage for all *female* citizens
+
+```{r}
+#Distribution of Excellent health level with their healthcare coverage for all male citizens
+RQ3%>%
+  filter(sex=="Male")%>%
+  group_by(hlthpln1)%>%
+  summarise(Excellent_health_m = ((sum(genhlth =="Excellent"))/n())*100)
+```
+
+Above result shows distribution of Excellent health level with their healthcare coverage for all *male* citizens
+
+
+
+```{r}
+#Distribution of Poor health level with their healthcare coverage for all female citizens
+RQ3%>%
+  filter(sex=="Female")%>%
+  group_by(hlthpln1)%>%
+  summarise(Poor_health_f = ((sum(genhlth == "Poor"))/n())*100)
+```
+
+Above result shows distribution of Poor health level with their healthcare coverage for all *female* citizens
+
+```{r}
+#Distribution of Poor health level with their healthcare coverage for all male citizens
+RQ3%>%
+  filter(sex=="Male")%>%
+  group_by(hlthpln1)%>%
+  summarise(Poor_health_m = ((sum(genhlth =="Poor"))/n())*100)
+```
+
+Above result shows distribution of Poor health level with their healthcare coverage for all *male* citizens
+
+
+
+
+
+```{r message=FALSE, warning=FALSE}
+#The 2 previous tables are combined
+RQ3_0 <-RQ3%>%
+  filter(sex=="Female")%>%
+  group_by(hlthpln1)%>%
+  summarise(Excellent_health_f = ((sum(genhlth == "Excellent"))/n())*100)
+RQ3_1 <- RQ3%>%
+  filter(sex=="Male")%>%
+  group_by(hlthpln1)%>%
+  summarise(Excellent_health_m = ((sum(genhlth =="Excellent"))/n())*100)
+RQ3_2 <- RQ3%>%
+  filter(sex=="Female")%>%
+  group_by(hlthpln1)%>%
+  summarise(Poor_health_f = ((sum(genhlth == "Poor"))/n())*100)
+RQ3_3 <- RQ3%>%
+  filter(sex=="Male")%>%
+  group_by(hlthpln1)%>%
+  summarise(Poor_health_m = ((sum(genhlth =="Poor"))/n())*100)
+
+RQ3_4 <- inner_join(inner_join(RQ3_0, RQ3_1),inner_join(RQ3_2,RQ3_3))
+
+RQ3_4
+
+```
+
+The above result shows a comparison of the distribution of the percentage of healthcare coverage among female and male citizens individually having Excellent and Poor health status.
+
+
+**Conclusion**
+
+There is not much difference between male and female percentages. of general health status. However, male Excellent health percentage (17.8%) is more than female Excellent health percentage (17.2%), simultaneously male Poor health percentage (5.34%) is less than female Poor health percentage (5.96%). Here, the percentage difference is small, but the above results point out that the general health of US male citizens is slightly better than US female citizens. When it comes to health care coverage,  17.6% percentage of female citizens have *Excellent* health along with health care coverage among all females, which is more than 13.3 % percentage of female citizens without any health care coverage. The same type of results is found with female and male citizens having *Excellent*  health and *Poor* health. Here, we can say that the US's citizens are more concerned about their healthcare planning irrespective of their health status and gender.
