@@ -11,22 +11,18 @@ You will produce a portfolio of data analysis projects from the Specialization t
   
 Instructors -
 
-  1. 
-  Mine Çetinkaya-Rundel
+  1. Mine Çetinkaya-Rundel
   Associate Professor of the Practice
   Department of Statistical Science
 
-  2.
-  David Banks
+  2. David Banks
   Professor of the Practice
   Statistical Science
 
-  3.
-  Colin Rundel
+  3. Colin Rundel
   Assistant Professor of the Practice
   Statistical Science
 
-  4.
-  Merlise A Clyde
+  4. Merlise A Clyde
   Professor
   Department of Statistical Science
